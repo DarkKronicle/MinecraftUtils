@@ -120,9 +120,13 @@ def main():
     print("\n")
 
     to_switch = Path("./to_pixel/convert/")
-    to_convert = to_switch.glob("**/*.png")
+    to_convert = list(to_switch.glob("**/*.png"))
+
+    total_image = len(to_convert)
+    total_start = 0
 
     for image in to_convert:
+        total_start += 1
         image_name = str(image)
         img = io.imread(image_name)
         img = fix_channels(img, False)
@@ -141,7 +145,7 @@ def main():
         for h in range(height):
             row_image = None
             for w in range(width):
-                progress(current, total, status=f'Converting {image}')
+                progress(current, total, status=f'Total: {total_start}/{total_image} Pixels: {current}/{total} - Converting {image}')
                 p = pixels[w, h]
                 r = p[0] % 255
                 g = p[1] % 255
@@ -151,6 +155,7 @@ def main():
                     color = r, g, b
                     to_get = min_color_diff(color, colors)
                     i = to_get[1]
+                    i = i[0:16, 0:16]
                     i = fix_channels(i, force_trans=a)
                 else:
                     i = transparent
