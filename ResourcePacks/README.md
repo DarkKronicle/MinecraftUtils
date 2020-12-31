@@ -19,8 +19,7 @@ Each file is named by of `newblockname.json`.
   "type": "type",
   "game": {
     "old": {
-      "id": 14,
-      "damage": 2
+      "name": "block_name"
     },
     "new": {
       "name": "block_name"
