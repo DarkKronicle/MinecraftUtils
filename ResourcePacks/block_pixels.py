@@ -1,24 +1,12 @@
 """
 Each pixel becomes a block texture.
 """
-import sys
 from pathlib import Path
 
 import cv2
 import numpy as np
 from skimage import io
-
-
-def progress(count, total, status='', bar_len=60):
-    filled_len = int(round(bar_len * count / float(total)))
-
-    percents = round(100.0 * count / float(total), 1)
-    bar = '=' * filled_len + '-' * (bar_len - filled_len)
-
-    fmt = '[%s] %s%s %s' % (bar, percents, '%', status)
-    print('\b' * len(fmt), end='')  # clears the line
-    sys.stdout.write(fmt)
-    sys.stdout.flush()
+from tqdm import tqdm
 
 
 def get_dominant_color(filename):
@@ -102,7 +90,7 @@ def fix_channels(img, fix_invert=True, force_trans=-1):
                     oned.extend([pixel[0] % 255, pixel[1] % 255, pixel[2] % 255, force_trans])
         # last.append(oned)
     ar = np.array(oned)
-    ar = ar.reshape(height, -1, channels)
+    ar = ar.reshape(height, -1, 4)
     return ar
 
 
@@ -113,8 +101,9 @@ def main():
     colors = {}
     total_palet = len(images)
     current = 1
-    for image in images:
-        progress(current, total_palet, status='Setting up palette.')
+    pbar = tqdm(images)
+    for image in pbar:
+        pbar.set_description("Setting up palette...")
         img = io.imread(image)
         dominant = get_average_color(img)
         colors[dominant] = img
@@ -147,43 +136,44 @@ def main():
             total = width * height
             current = 1
 
-            for h in range(height):
-                row_image = None
-                progress(current, total,
-                         status=f'Total: {total_start}/{total_image} Pixels: {current}/{total} - Converting {image}')
-                for w in range(width):
-                    p = pixels[h, w]
-                    r = p[0] % 255
-                    g = p[1] % 255
-                    b = p[2] % 255
-                    a = p[3] % 256
-                    if a > 0:
-                        color = r, g, b
-                        to_get = min_color_diff(color, colors)
-                        i = to_get[1]
-                        i = i[0:16, 0:16]
-                        i = fix_channels(i, force_trans=a)
+            with tqdm(total=total, ) as pbar:
+                for h in range(height):
+                    row_image = None
+                    for w in range(width):
+                        pbar.update()
+                        pbar.set_postfix_str(f'Total: {total_start}/{total_image} Pixels: {current}/{total} - {image.name}')
+                        p = pixels[h, w]
+                        r = p[0] % 255
+                        g = p[1] % 255
+                        b = p[2] % 255
+                        a = p[3] % 256
+                        if a > 0:
+                            color = r, g, b
+                            to_get = min_color_diff(color, colors)
+                            i = to_get[1]
+                            i = i[0:16, 0:16]
+                            i = fix_channels(i, force_trans=a)
+                        else:
+                            i = transparent
+                        if row_image is None:
+                            row_image = i
+                        else:
+                            row_image = np.concatenate((row_image, i), axis=1)
+                        current += 1
+
+                    img_rows.append(row_image)
+
+                for i in img_rows:
+                    if img_stitched is None:
+                        img_stitched = i
                     else:
-                        i = transparent
-                    if row_image is None:
-                        row_image = i
-                    else:
-                        row_image = np.concatenate((row_image, i), axis=1)
-                    current += 1
+                        img_stitched = np.concatenate((img_stitched, i), axis=0)
 
-                img_rows.append(row_image)
-
-            for i in img_rows:
-                if img_stitched is None:
-                    img_stitched = i
-                else:
-                    img_stitched = np.concatenate((img_stitched, i), axis=0)
-
-            folder = '/'.join(image_name.split("/")[0:-1]) + "/"
-            to_save = Path(str("./to_pixel/done") + '/' + folder + image.name)
-            to_save.parent.mkdir(parents=True, exist_ok=True)
-            cv2.imwrite(str(to_save), img_stitched)
-        except RuntimeError:
+                folder = '/'.join(image_name.split("/")[0:-1]) + "/"
+                to_save = Path(str("./to_pixel/done") + '/' + folder + image.name)
+                to_save.parent.mkdir(parents=True, exist_ok=True)
+                cv2.imwrite(str(to_save), img_stitched)
+        except:
             problems.append(str(image))
 
     print(f"Done! Only problems:" + '\n'.join(problems))
