@@ -7,11 +7,17 @@ import cv2
 import numpy as np
 from skimage import io
 from tqdm import tqdm
+from colorama import Fore
+
+
+PALETTE_DIR = "./to_pixel/palette"
+PALETTE_RES = (16, 16)
+CONVERT_PATH = "./to_pixel/convert"
 
 
 def get_dominant_color(filename):
     img = io.imread(filename)
-    
+
     img = fix_channels(img)
 
     pixels = np.float32(img.reshape(-1, 4))
@@ -68,26 +74,40 @@ def min_color_diff(color_to_match, colors):
 
 
 def fix_channels(img, fix_invert=True, force_trans=-1):
-    height, width, channels = img.shape
+    try:
+        height, width, channels = img.shape
+    except ValueError:
+        height, width = img.shape
+        channels = 1
     pixels = np.int8(img.reshape(width, -1, channels))
     oned = []
-    for w in range(width):
-        # oned = []
-        for h in range(height):
-            if channels == 4 and force_trans < 0:
-                pixel = pixels[w, h]
-                if fix_invert:
-                    oned.extend([pixel[2] % 255, pixel[1] % 255, pixel[0] % 255, pixel[3] % 256])
-                else:
-                    oned.extend([pixel[0] % 255, pixel[1] % 255, pixel[2] % 255, pixel[3] % 256])
-            else:
-                pixel = pixels[w, h]
+    if channels == 1:
+        for w in range(width):
+            # oned = []
+            for h in range(height):
+                pixel = pixels[w, h] % 255
                 if force_trans < 0:
                     force_trans = 255
-                if fix_invert:
-                    oned.extend([pixel[2] % 255, pixel[1] % 255, pixel[0] % 255, force_trans])
+                oned.extend([pixel, pixel, pixel, force_trans])
+            # last.append(oned)
+    else:
+        for w in range(width):
+            # oned = []
+            for h in range(height):
+                if channels == 4 and force_trans < 0:
+                    pixel = pixels[w, h]
+                    if fix_invert:
+                        oned.extend([pixel[2] % 255, pixel[1] % 255, pixel[0] % 255, pixel[3] % 256])
+                    else:
+                        oned.extend([pixel[0] % 255, pixel[1] % 255, pixel[2] % 255, pixel[3] % 256])
                 else:
-                    oned.extend([pixel[0] % 255, pixel[1] % 255, pixel[2] % 255, force_trans])
+                    pixel = pixels[w, h]
+                    if force_trans < 0:
+                        force_trans = 255
+                    if fix_invert:
+                        oned.extend([pixel[2] % 255, pixel[1] % 255, pixel[0] % 255, force_trans])
+                    else:
+                        oned.extend([pixel[0] % 255, pixel[1] % 255, pixel[2] % 255, force_trans])
         # last.append(oned)
     ar = np.array(oned)
     ar = ar.reshape(height, -1, 4)
@@ -95,11 +115,10 @@ def fix_channels(img, fix_invert=True, force_trans=-1):
 
 
 def main():
-    palette = Path("./to_pixel/palette/")
+    palette = Path(PALETTE_DIR)
     images = list(palette.glob("**/*.png"))
-    transparent = np.zeros((16, 16, 4))
+    transparent = np.zeros((PALETTE_RES[0], PALETTE_RES[1], 4))
     colors = {}
-    total_palet = len(images)
     current = 1
     pbar = tqdm(images)
     for image in pbar:
@@ -108,9 +127,8 @@ def main():
         dominant = get_average_color(img)
         colors[dominant] = img
         current += 1
-    print("\n")
 
-    to_switch = Path("./to_pixel/convert/")
+    to_switch = Path(CONVERT_PATH)
     to_convert = list(to_switch.glob("**/*.png"))
 
     total_image = len(to_convert)
@@ -135,13 +153,18 @@ def main():
 
             total = width * height
             current = 1
+            num = f"Image: {total_start}/{total_image}"
+            with tqdm(total=total, unit=' pixels',
+                      bar_format="%s{l_bar}%s{bar}%s| Pixel: {n_fmt}/{total_fmt} %s {postfix} [{elapsed}<{"
+                                 "remaining}, {rate_fmt}]%s" % (Fore.BLUE, Fore.WHITE, Fore.BLUE, num, Fore.RESET),
+                      smoothing=0.1,
+                      desc=f"Processing {image.name}") \
+                    as pbar:
 
-            with tqdm(total=total, ) as pbar:
                 for h in range(height):
                     row_image = None
                     for w in range(width):
                         pbar.update()
-                        pbar.set_postfix_str(f'Total: {total_start}/{total_image} Pixels: {current}/{total} - {image.name}')
                         p = pixels[h, w]
                         r = p[0] % 255
                         g = p[1] % 255
@@ -151,7 +174,7 @@ def main():
                             color = r, g, b
                             to_get = min_color_diff(color, colors)
                             i = to_get[1]
-                            i = i[0:16, 0:16]
+                            i = i[0:PALETTE_RES[0], 0:PALETTE_RES[1]]
                             i = fix_channels(i, force_trans=a)
                         else:
                             i = transparent
@@ -162,7 +185,7 @@ def main():
                         current += 1
 
                     img_rows.append(row_image)
-
+                pbar.set_description_str(f"Saving {image.name}")
                 for i in img_rows:
                     if img_stitched is None:
                         img_stitched = i
@@ -173,7 +196,11 @@ def main():
                 to_save = Path(str("./to_pixel/done") + '/' + folder + image.name)
                 to_save.parent.mkdir(parents=True, exist_ok=True)
                 cv2.imwrite(str(to_save), img_stitched)
-        except:
+                pbar.set_description_str(f"Done with {image.name}!")
+        except Exception as e:
+            # REMOVE IF DEBUGGING ^
+            if isinstance(e, KeyboardInterrupt):
+                return
             problems.append(str(image))
 
     print(f"Done! Only problems:" + '\n'.join(problems))
