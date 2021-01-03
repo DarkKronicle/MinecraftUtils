@@ -2,3 +2,4 @@
 __pycache__
 /venv
 /ResourcePacks/to_pixel/
+**/to_pixel/

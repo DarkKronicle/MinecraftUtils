@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-import ResourcePacks.texture_json as tjson
+import ResourcePacks.conversion.texture_json as tjson
 
 
 class ConversionHandler:
