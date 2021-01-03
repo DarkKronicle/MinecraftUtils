@@ -64,6 +64,13 @@ def adjust_color_lightness(r, g, b, factor):
     return int(r * 255), int(g * 255), int(b * 255)
 
 
+def map_sat(r1, g1, b1, r2, g2, b2):
+    h1, l1, s1 = rgb_to_hls(r1 / 255, g1 / 255, b1 / 255)
+    h2, l2, s2 = rgb_to_hls(r2 / 255, g2 / 255, b2 / 255)
+    r3, g3, b3 = hls_to_rgb(h2, l1, (s1 + s2) / 2)
+    return int(r3 * 255), int(g3 * 255), int(b3 * 255)
+
+
 def clamp(num, min_num, max_num):
     # 0 1 5
     if min_num <= num <= max_num:
@@ -123,6 +130,11 @@ def main():
                             gray = (0.3 * p[0]) + (0.59 * p[1]) + (0.11 * p[2])
                             brightness = clamp(1 + (0.5 - (gray / 255)) / 1, 0.7, 1.3)
                             new = adjust_color_lightness(i[0], i[1], i[2], brightness)
+                            i[0] = new[0]
+                            i[1] = new[1]
+                            i[2] = new[2]
+                        if MAP_COLOR:
+                            new = map_sat(i[0], i[1], i[2], p[2], p[1], p[0])
                             i[0] = new[0]
                             i[1] = new[1]
                             i[2] = new[2]
