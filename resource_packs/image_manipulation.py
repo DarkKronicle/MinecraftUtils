@@ -44,13 +44,12 @@ def fix_channels(img, fix_invert=True, force_trans=-1):
     if channels == 1:
         for w in range(width):
             for h in range(height):
-                pixel = pixels[w, h] % 255
+                pixel = pixels[w, h][0] % 255
                 if force_trans < 0:
                     force_trans = 255
                 oned.extend([pixel, pixel, pixel, force_trans])
     else:
         for w in range(width):
-            # oned = []
             for h in range(height):
                 if channels == 4 and force_trans < 0:
                     pixel = pixels[w, h]
@@ -61,11 +60,13 @@ def fix_channels(img, fix_invert=True, force_trans=-1):
                 else:
                     pixel = pixels[w, h]
                     if force_trans < 0:
-                        force_trans = 255
-                    if fix_invert:
-                        oned.extend([pixel[2] % 255, pixel[1] % 255, pixel[0] % 255, force_trans])
+                        force = 255
                     else:
-                        oned.extend([pixel[0] % 255, pixel[1] % 255, pixel[2] % 255, force_trans])
+                        force = force_trans
+                    if fix_invert:
+                        oned.extend([pixel[2] % 255, pixel[1] % 255, pixel[0] % 255, force])
+                    else:
+                        oned.extend([pixel[0] % 255, pixel[1] % 255, pixel[2] % 255, force])
         # last.append(oned)
     ar = np.array(oned)
     ar = ar.reshape(height, -1, 4)

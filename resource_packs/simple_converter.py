@@ -1,24 +1,23 @@
 from pathlib import Path
 
 import cv2
+from tqdm import tqdm
+
+from resource_packs.image_builder import ImageBuilder
 import numpy as np
 from skimage import io
-from tqdm import tqdm
 from colorama import Fore
-
-from ResourcePacks.image_builder import ImageBuilder
-
-CONVERT_PATH = "./to_pixel/convert"
+import resource_packs
 
 
-def main():
-    to_switch = Path(CONVERT_PATH)
-    to_convert = list(to_switch.glob("**/*.png"))
+def convert(pixel_func, to_convert, to_save):
+    to_switch = to_convert
+    to_convert_files = list(to_switch.glob("**/*.png"))
 
     total_start = 0
 
     problems = []
-    pbar = tqdm(to_convert, unit=' images',
+    pbar = tqdm(to_convert_files, unit=' images',
                 bar_format="%s{l_bar}%s{bar}%s{r_bar}%s" % (Fore.BLUE, Fore.WHITE, Fore.BLUE, Fore.RESET),
                 smoothing=0.1)
     for image in pbar:
@@ -27,26 +26,21 @@ def main():
             total_start += 1
             image_name = str(image)
             img = io.imread(image_name)
-            builder = ImageBuilder(img, fix_invert=False)
+            builder = ImageBuilder(img, fix_invert=True)
             for p in builder:
                 a = p[3] % 256
                 if a > 0:
                     i = p
-                    i[0] = 255 - p[0]
-                    i[1] = 255 - p[1]
-                    i[2] = 255 - p[2]
-                    i[3] = a
+                    i = pixel_func(i)
                 else:
                     i = builder.transparent
 
                 builder.add(i)
 
             img_stitched = builder.build()
-            folder = '/'.join(image_name.split("/")[2:-1]) + "/"
-            to_save = Path(str("./to_pixel/done") + '/' + folder + image.name)
-            to_save.parent.mkdir(parents=True, exist_ok=True)
-            cv2.imwrite(str(to_save), np.float32(img_stitched))
-        except Exception as e:
+            to_save_to = resource_packs.get_path(image, to_convert, to_save)
+            cv2.imwrite(str(to_save_to), np.float32(img_stitched))
+        except RuntimeError as e:
             # REMOVE IF DEBUGGING ^
             if isinstance(e, KeyboardInterrupt):
                 return
@@ -56,7 +50,3 @@ def main():
         print("No problems! Awesome!")
     else:
         print(f"Done! Only problems:" + '\n'.join(problems))
-
-
-if __name__ == '__main__':
-    main()

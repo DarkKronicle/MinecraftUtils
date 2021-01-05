@@ -1,5 +1,6 @@
 /.idea
 __pycache__
 /venv
-/ResourcePacks/to_pixel/
+/resource_packs/to_pixel/
 **/to_pixel/
+**/assets/

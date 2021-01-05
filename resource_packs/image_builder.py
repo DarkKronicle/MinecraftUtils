@@ -1,4 +1,4 @@
-import ResourcePacks.image_manipulation as images
+import resource_packs.image_manipulation as images
 import numpy as np
 
 
@@ -31,9 +31,14 @@ class ImageBuilder:
         return np.zeros(self.scale, 4)
 
     def __iter__(self):
-        count = 0
         for h in range(self.height):
             for w in range(self.width):
-                count += 1
                 yield self.image[h, w].copy()
 
+    def packed(self):
+        """
+        Used to get current x value and y value
+        """
+        for h in range(self.height):
+            for w in range(self.width):
+                yield w, h, self.image[h, w].copy()

@@ -8,18 +8,15 @@ import numpy as np
 from skimage import io
 from tqdm import tqdm
 from colorama import Fore
-import ResourcePacks.image_manipulation as images
+
+import resource_packs
+import resource_packs.image_manipulation as images
 
 
-PALETTE_DIR = "./to_pixel/palette"
-PALETTE_RES = (16, 16)
-CONVERT_PATH = "./to_pixel/convert"
-
-
-def main():
-    palette = Path(PALETTE_DIR)
+def pixel_per_block(palette_res, to_palette, to_save, to_convert):
+    palette = Path(to_palette)
     palette_images = list(palette.glob("**/*.png"))
-    transparent = np.zeros((PALETTE_RES[0], PALETTE_RES[1], 4))
+    transparent = np.zeros((palette_res[0], palette_res[1], 4))
     colors = {}
     current = 1
     pbar = tqdm(palette_images)
@@ -30,15 +27,15 @@ def main():
         colors[dominant] = img
         current += 1
 
-    to_switch = Path(CONVERT_PATH)
-    to_convert = list(to_switch.glob("**/*.png"))
+    to_switch = to_convert
+    to_convert_to = list(to_switch.glob("**/*.png"))
 
-    total_image = len(to_convert)
+    total_image = len(to_convert_to)
     total_start = 0
 
     problems = []
 
-    for image in to_convert:
+    for image in to_convert_to:
         try:
             total_start += 1
             image_name = str(image)
@@ -48,7 +45,6 @@ def main():
             if channels < 3:
                 print("Not big enough channels")
                 continue
-            # pixels = np.int8(img.reshape(width, -1, channels))
             pixels = img
             img_rows = []
             img_stitched = None
@@ -76,7 +72,7 @@ def main():
                             color = r, g, b
                             to_get = images.min_color_diff(color, colors)
                             i = to_get[1]
-                            i = i[0:PALETTE_RES[0], 0:PALETTE_RES[1]]
+                            i = i[0:palette_res[0], 0:palette_res[1]]
                             i = images.fix_channels(i, force_trans=a)
                         else:
                             i = transparent
@@ -94,10 +90,8 @@ def main():
                     else:
                         img_stitched = np.concatenate((img_stitched, i), axis=0)
 
-                folder = '/'.join(image_name.split("/")[2:-1]) + "/"
-                to_save = Path(str("./to_pixel/done") + '/' + folder + image.name)
-                to_save.parent.mkdir(parents=True, exist_ok=True)
-                cv2.imwrite(str(to_save), img_stitched)
+                to_save_to = resource_packs.get_path(image, to_convert, to_save)
+                cv2.imwrite(str(to_save_to), img_stitched)
                 pbar.set_description_str(f"Done with {image.name}!")
         except Exception as e:
             # REMOVE IF DEBUGGING ^
@@ -107,6 +101,3 @@ def main():
 
     print(f"Done! Only problems:" + '\n'.join(problems))
 
-
-if __name__ == '__main__':
-    main()
