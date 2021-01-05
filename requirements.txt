@@ -1,0 +1,6 @@
+inquirer~=2.7.0
+opencv-python~=4.4.0.46
+scikit-image~=0.18.1
+tqdm~=4.55.0
+colorama~=0.4.4
+numpy~=1.19.3
