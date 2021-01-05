@@ -67,4 +67,7 @@ def all_one(palette_file, to_convert, to_save, map_brightness, map_transparency,
                 return
             problems.append(str(image))
 
-    print(f"Done! Only problems:" + '\n'.join(problems))
+    if len(problems) == 0:
+        print("LETS GO! NO ERRORS.")
+    else:
+        print(f"Done! Only problems:" + '\n'.join(problems))

@@ -1,6 +1,3 @@
-"""
-Each pixel becomes a block texture.
-"""
 from pathlib import Path
 
 import cv2
@@ -99,5 +96,8 @@ def pixel_per_block(palette_res, to_palette, to_save, to_convert):
                 return
             problems.append(str(image))
 
-    print(f"Done! Only problems:" + '\n'.join(problems))
+    if len(problems) != 0:
+        print(f"Done! Only problems:" + '\n'.join(problems))
+    else:
+        print("Done! No problems! POG CHAMP!")
 

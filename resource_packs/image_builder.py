@@ -9,17 +9,14 @@ class ImageBuilder:
         self.height, self.width, _ = self.image.shape
         self.scale = scale
         self.shape = (self.scale, 4)
-        self.array = None
+        self.queue = []
 
     def build(self):
-        return self.array.reshape((self.height, self.width, 4))
+        arr = np.array(self.queue, dtype=object)
+        return np.float32(arr.reshape((self.height, self.width, 4)))
 
     def add(self, arr):
-        arr = arr.reshape(self.shape)
-        if self.array is None:
-            self.array = arr
-        else:
-            self.array = np.concatenate((self.array, arr))
+        self.queue.extend(list(arr))
 
     def __getitem__(self, *args):
         return self.image[args]

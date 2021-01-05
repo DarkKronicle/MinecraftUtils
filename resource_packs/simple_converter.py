@@ -40,7 +40,7 @@ def convert(pixel_func, to_convert, to_save):
             img_stitched = builder.build()
             to_save_to = resource_packs.get_path(image, to_convert, to_save)
             cv2.imwrite(str(to_save_to), np.float32(img_stitched))
-        except RuntimeError as e:
+        except Exception as e:
             # REMOVE IF DEBUGGING ^
             if isinstance(e, KeyboardInterrupt):
                 return
