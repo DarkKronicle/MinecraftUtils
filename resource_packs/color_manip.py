@@ -20,10 +20,23 @@ def set_grayscale(i):
     return i
 
 
-blueh, bluel, blues = rgb_to_hls(2 / 255.0, 72 / 255.0, 733 / 255.0)
+custom_r = 2
+custom_g = 72
+custom_b = 233
+
+blueh, bluel, blues = rgb_to_hls(custom_r / 255.0, custom_g / 255.0, custom_b / 255.0)
 
 
-def set_blue(i):
+def set_color(r, g, b):
+    global blueh, bluel, blues, custom_r, custom_g, custom_b
+    custom_r = r
+    custom_g = g
+    custom_b = b
+
+    blueh, bluel, blues = rgb_to_hls(custom_r / 255.0, custom_g / 255.0, custom_b / 255.0)
+
+
+def set_custom(i):
     h1, l1, s1 = rgb_to_hls(i[0] / 255.0, i[1] / 255.0, i[2] / 255.0)
     h1 = blueh
     r, g, b = hls_to_rgb(h1, l1, s1)
@@ -36,7 +49,7 @@ def set_blue(i):
 class ColorPresets(enum.Enum):
     invert = partial(set_invert)
     grayscale = partial(set_grayscale)
-    blue = partial(set_blue)
+    custom = partial(set_custom)
 
 
 def convert(color_preset, to_convert, to_save):

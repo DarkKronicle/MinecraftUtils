@@ -5,6 +5,8 @@ import resource_packs.color_manip as color
 import resource_packs as rp
 from functools import wraps
 import resource_packs.all_one as one
+import resource_packs.color_manip as cm
+import resource_packs.block_pixels as bp
 
 
 def store_func(func, *args, **kwargs):
@@ -34,6 +36,36 @@ def all_for_one(to_convert, to_save):
     one.all_one(answers['palette'], to_convert, to_save, answers['brightness'], answers['transparency'], answers['color'])
 
 
+def pixel_blocks(to_convert, to_save):
+    questions = [
+        inquirer.Path("palette", path_type=inquirer.Path.DIRECTORY,
+                      message="What directory will contain the palette images?", default="assets/palette/"),
+        inquirer.Text(
+            "palette_res", message="What resolution are the palette images?", default=16
+        )
+    ]
+    answers = inquirer.prompt(questions)
+    res = int(answers['palette_res'])
+    bp.pixel_per_block((res, res), answers['palette'], to_save, to_convert)
+
+
+def custom(to_convert, to_save):
+    questions = [
+        inquirer.Text(
+            "r", message="What's the R value?"
+        ),
+        inquirer.Text(
+            "g", message="Whats the G value?"
+        ),
+        inquirer.Text(
+            "b", message="Whats the B value?"
+        )
+    ]
+    answers = inquirer.prompt(questions)
+    cm.set_color(int(answers['r']), int(answers['g']), int(answers['b']))
+    color.convert(color.ColorPresets.custom.value, to_convert, to_save)
+
+
 def main():
     """
     MAKE SURE YOU RUN THIS IN A TERMINAL.
@@ -43,8 +75,9 @@ def main():
     options = {
         'Grayscale': store_func(color.convert, color.ColorPresets.grayscale.value),
         'Invert': store_func(color.convert, color.ColorPresets.invert.value),
-        'Blue': store_func(color.convert, color.ColorPresets.blue.value),
-        'All One': all_for_one
+        'Custom Color': custom,
+        'All One': all_for_one,
+        'Pixel Blocks': pixel_blocks
     }
 
     questions = [
