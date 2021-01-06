@@ -13,10 +13,13 @@ class ImageBuilder:
 
     def build(self):
         arr = np.array(self.queue, dtype=object)
-        return np.float32(arr.reshape((self.height, self.width, 4)))
+        return np.float32(arr.reshape((self.height * self.scale, self.width * self.scale, 4)))
 
     def add(self, arr):
         self.queue.extend(list(arr))
+
+    def add_force(self, arr):
+        self.queue.append(arr)
 
     def __getitem__(self, *args):
         return self.image[args]
