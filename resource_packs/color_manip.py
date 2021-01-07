@@ -40,14 +40,47 @@ def set_color(r, g, b):
 
 def set_custom(i):
     shape = i.shape
-    rgb_arr = i[[0, 1, 2]].transpose((1, 2, 0))
+    rgb_arr = i[[0, 1, 2]].transpose((1, 2, 0)) / 255
     hsv_arr = matc.rgb_to_hsv(rgb_arr).transpose((2, 0, 1))
     hsv_arr[0] = np.full(shape[1:], blueh)
     r, g, b = matc.hsv_to_rgb(hsv_arr.transpose((1, 2, 0))).transpose((2, 0, 1))
-    i[2] = r
-    i[1] = g
-    i[0] = b
+    i[2] = r * 255
+    i[1] = g * 255
+    i[0] = b * 255
     return i
+
+
+def set_brightness(i, brightness):
+    rgb_arr = i[[0, 1, 2]].transpose((1, 2, 0)) / 255
+    hsv_arr = matc.rgb_to_hsv(rgb_arr).transpose((2, 0, 1))
+    hsv_arr[2] = hsv_arr[2] * brightness
+    hsv_arr[2, hsv_arr[2] > 1] = 1
+    hsv_arr[2, hsv_arr[2] < 0] = 0
+    r, g, b = matc.hsv_to_rgb(hsv_arr.transpose((1, 2, 0))).transpose((2, 0, 1))
+    i[0] = r * 255
+    i[1] = g * 255
+    i[2] = b * 255
+    return i
+
+
+def set_hue(base, copy):
+    # Grab the base HSV values
+    base_rgb_arr = base[[0, 1, 2]].transpose((1, 2, 0)) / 255
+    base_hsv_arr = matc.rgb_to_hsv(base_rgb_arr).transpose((2, 0, 1))
+
+    # Grab the HSV values to edit
+    rgb_arr = copy[[0, 1, 2]].transpose((1, 2, 0)) / 255
+    hsv_arr = matc.rgb_to_hsv(rgb_arr).transpose((2, 0, 1))
+
+    # Set the second to the first
+    hsv_arr[0] = base_hsv_arr[0]
+    hsv_arr[2] = (hsv_arr[2] + base_hsv_arr[2]) / 2
+    hsv_arr[1] = (hsv_arr[1] + base_hsv_arr[1]) / 2
+    r, g, b = matc.hsv_to_rgb(hsv_arr.transpose((1, 2, 0))).transpose((2, 0, 1))
+    copy[0] = r * 255
+    copy[1] = g * 255
+    copy[2] = b * 255
+    return copy
 
 
 class ColorPresets(enum.Enum):

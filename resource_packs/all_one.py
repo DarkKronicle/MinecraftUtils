@@ -1,18 +1,21 @@
+from math import ceil
 from pathlib import Path
 import resource_packs.image_manipulation as images
-from resource_packs.image_builder import ImageBuilder
+import resource_packs.color_manip as color
 
 import cv2
 import resource_packs
 from skimage import io
 from tqdm import tqdm
 from colorama import Fore
+import numpy as np
 
 
 def all_one(palette_file, to_convert, to_save, map_brightness, map_transparency, map_color):
     palette = images.fix_channels(io.imread(Path(palette_file)), force_trans=255)
     # We want to get the width/height so that we don't get any index errors.
     p_height, p_width, _ = palette.shape
+    palette = palette # .transpose((2, 0, 1))
 
     to_switch = Path(to_convert)
     to_convert_to = list(to_switch.glob("**/*.png"))
@@ -25,39 +28,45 @@ def all_one(palette_file, to_convert, to_save, map_brightness, map_transparency,
                 smoothing=0.1)
     for image in pbar:
         try:
-            pbar.set_description_str(f"Processing {image.name}")
             total_start += 1
             image_name = str(image)
             img = io.imread(image_name)
-            builder = ImageBuilder(img)
-            for w, h, p in builder.packed():
-                if map_transparency:
-                    a = p[3] % 256
-                else:
-                    a = 255
-                if a > 0:
-                    # If we don't copy, it actually gets modified by KEEP_BRIGHT.
-                    i = palette[h % p_height, w % p_width].copy()
-                    if map_brightness:
-                        # We still want to somewhat know what we're looking at.
-                        # Does slow it down, but it's not too bad.
-                        gray = images.get_gray(p[0], p[1], p[2])
-                        brightness = images.clamp(1 + (0.5 - (gray / 255)) / 1, 0.7, 1.3)
-                        new = images.adjust_color_lightness(i[0], i[1], i[2], brightness)
-                        i[0] = new[0]
-                        i[1] = new[1]
-                        i[2] = new[2]
-                    if map_color:
-                        new = images.map_sat(i[0], i[1], i[2], p[2], p[1], p[0])
-                        i[0] = new[0]
-                        i[1] = new[1]
-                        i[2] = new[2]
-                    i[3] = a
-                else:
-                    i = builder.transparent
-                builder.add(i)
+            shape = img.shape
+            if len(shape) == 2:
+                img = img[:, :, np.newaxis]
+                shape = img.shape
+            img = img.transpose((2, 0, 1))
+            if len(img) == 1:
+                img = np.array([img[0], img[0], img[0], np.full(img.shape[1:], 255)])
+            elif len(img) == 3:
+                img = np.array([img[2], img[1], img[0], np.full(img.shape[1:], 255)])
+            else:
+                img = img[[2, 1, 0, 3]]
+            # We tile it a certain amount and then crop it when we're done.
+            height_tile = ceil(shape[0] / p_height)
+            width_tile = ceil(shape[1] / p_width)
+            edited_img = np.tile(palette, (height_tile, width_tile, 1))
+            edited_img = edited_img[:shape[0], :shape[1], :].transpose((2, 0, 1))
 
-            img_stitched = builder.build()
+            # Length of image shows if it has alpha.
+            if map_transparency and len(img) == 4:
+                edited_img[3] = img[3]
+            if map_brightness:
+                gray = images.get_gray(img[0], img[1], img[2])
+                brightness = 1 + (0.5 - (gray / 255)) / 1
+                brightness[brightness > 1.3] = 1.3
+                brightness[brightness < 0.7] = 0.7
+                new = color.set_brightness(edited_img, brightness)
+                edited_img[0] = new[0]
+                edited_img[1] = new[1]
+                edited_img[2] = new[2]
+            if map_color:
+                new = color.set_hue(img, edited_img)
+                edited_img[0] = new[0]
+                edited_img[1] = new[1]
+                edited_img[2] = new[2]
+
+            img_stitched = edited_img.transpose((1, 2, 0))
 
             to_save_to = resource_packs.get_path(image, to_convert, to_save)
             cv2.imwrite(str(to_save_to), img_stitched)

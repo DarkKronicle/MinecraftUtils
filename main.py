@@ -21,7 +21,7 @@ def store_func(func, *args, **kwargs):
 def all_for_one(to_convert, to_save):
     questions = [
         inquirer.Path("palette", path_type=inquirer.Path.FILE,
-                      message="What file will be the palette?", default="assets/convert/cobblestone.png"),
+                      message="What file will be the palette?", default="assets/cobblestone.png"),
         inquirer.Confirm(
             "brightness", message="Map brightness?"
                       ),
