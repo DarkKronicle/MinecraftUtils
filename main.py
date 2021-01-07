@@ -18,7 +18,7 @@ def store_func(func, *args, **kwargs):
     return new_func
 
 
-def all_for_one(to_convert, to_save):
+def one_for_all(to_convert, to_save):
     questions = [
         inquirer.Path("palette", path_type=inquirer.Path.FILE,
                       message="What file will be the palette?", default="assets/cobblestone.png"),
@@ -76,8 +76,9 @@ def main():
         'Grayscale': store_func(color.convert, color.ColorPresets.grayscale.value),
         'Invert': store_func(color.convert, color.ColorPresets.invert.value),
         'Custom Color': custom,
-        'All One': all_for_one,
-        'Pixel Blocks': pixel_blocks
+        'One for All': one_for_all,
+        'Pixel Blocks': pixel_blocks,
+        'Copy .mcmeta': rp.copy_mcmeta
     }
 
     questions = [
