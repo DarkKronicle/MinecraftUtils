@@ -2,7 +2,9 @@ import enum
 from functools import partial
 import resource_packs.image_manipulation as images
 import resource_packs.simple_converter as simple
-from colorsys import rgb_to_hls, hls_to_rgb
+from colorsys import rgb_to_hsv
+import matplotlib.colors as matc
+import numpy as np
 
 
 def set_invert(i):
@@ -24,7 +26,7 @@ custom_r = 2
 custom_g = 72
 custom_b = 233
 
-blueh, bluel, blues = rgb_to_hls(custom_r / 255.0, custom_g / 255.0, custom_b / 255.0)
+blueh, blues, bluev = rgb_to_hsv(custom_r / 255.0, custom_g / 255.0, custom_b / 255.0)
 
 
 def set_color(r, g, b):
@@ -33,16 +35,18 @@ def set_color(r, g, b):
     custom_g = g
     custom_b = b
 
-    blueh, bluel, blues = rgb_to_hls(custom_r / 255.0, custom_g / 255.0, custom_b / 255.0)
+    blueh, blues, bluev = rgb_to_hsv(custom_r / 255.0, custom_g / 255.0, custom_b / 255.0)
 
 
 def set_custom(i):
-    h1, l1, s1 = rgb_to_hls(i[0] / 255.0, i[1] / 255.0, i[2] / 255.0)
-    h1 = blueh
-    r, g, b = hls_to_rgb(h1, l1, s1)
-    i[2] = int(r * 255)
-    i[1] = int(g * 255)
-    i[0] = int(b * 255)
+    shape = i.shape
+    rgb_arr = i[[0, 1, 2]].transpose((1, 2, 0))
+    hsv_arr = matc.rgb_to_hsv(rgb_arr).transpose((2, 0, 1))
+    hsv_arr[0] = np.full(shape[1:], blueh)
+    r, g, b = matc.hsv_to_rgb(hsv_arr.transpose((1, 2, 0))).transpose((2, 0, 1))
+    i[2] = r
+    i[1] = g
+    i[0] = b
     return i
 
 
