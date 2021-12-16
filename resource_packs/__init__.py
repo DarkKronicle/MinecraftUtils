@@ -19,3 +19,12 @@ def copy_mcmeta(to_convert, to_save):
     for m in pbar:
         to_save_to = get_path(m, to_convert, to_save)
         shutil.copy(m, to_save_to)
+
+
+def get_img_files(directory):
+    directory = Path(directory)
+    file_types = ('*.png', '*.jpg')
+    images = []
+    for file_type in file_types:
+        images.extend(directory.glob("**/{}".format(file_type)))
+    return images

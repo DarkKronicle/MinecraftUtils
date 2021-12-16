@@ -4,3 +4,4 @@ __pycache__
 /resource_packs/to_pixel/
 **/to_pixel/
 **/assets/
+/.python-version

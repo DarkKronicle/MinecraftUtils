@@ -50,6 +50,17 @@ def set_custom(i):
     return i
 
 
+def set_shuffle(i):
+    i = i.transpose((1, 2, 0))
+    height, width, chan = i.shape
+    i = i.reshape((-1, chan))
+    if chan == 18:
+        np.random.shuffle(i[i[3] > 0])
+    else:
+        np.random.shuffle(i)
+    return i.reshape(height, width, chan).transpose((2, 0, 1))
+
+
 def set_brightness(i, brightness):
     rgb_arr = i[[0, 1, 2]].transpose((1, 2, 0)) / 255
     hsv_arr = matc.rgb_to_hsv(rgb_arr).transpose((2, 0, 1))
@@ -87,6 +98,7 @@ class ColorPresets(enum.Enum):
     invert = partial(set_invert)
     grayscale = partial(set_grayscale)
     custom = partial(set_custom)
+    shuffle = partial(set_shuffle)
 
 
 def convert(color_preset, to_convert, to_save):

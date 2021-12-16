@@ -1,12 +1,15 @@
 from pathlib import Path
 
 import inquirer
+from tqdm import tqdm
+
 import resource_packs.color_manip as color
 import resource_packs as rp
 from functools import wraps
 import resource_packs.all_one as one
 import resource_packs.color_manip as cm
 import resource_packs.block_pixels as bp
+from PIL import Image
 
 
 def store_func(func, *args, **kwargs):
@@ -66,6 +69,16 @@ def custom(to_convert, to_save):
     color.convert(color.ColorPresets.custom.value, to_convert, to_save)
 
 
+def png_all(to_convert, to_save):
+    directory = Path(to_convert)
+    file_types = ('*.png', '*.jpg', '*.webp', '*.jpeg')
+    images = []
+    for file_type in file_types:
+        images.extend(directory.glob("**/{}".format(file_type)))
+    for image in tqdm(images):
+        im = Image.open(str(image)).convert('RGB')
+        im.save(rp.get_path(Path(str(image.parent) + '/' + image.stem + '.png'), to_convert, to_save), 'png')
+
 def main():
     """
     MAKE SURE YOU RUN THIS IN A TERMINAL.
@@ -73,12 +86,14 @@ def main():
     (If using PyCharm) you can set 'Emulate Terminal' to true.
     """
     options = {
+        'PNG Everything': png_all,
         'Grayscale': store_func(color.convert, color.ColorPresets.grayscale.value),
         'Invert': store_func(color.convert, color.ColorPresets.invert.value),
         'Custom Color': custom,
         'One for All': one_for_all,
         'Pixel Blocks': pixel_blocks,
-        'Copy .mcmeta': rp.copy_mcmeta
+        'Copy .mcmeta': rp.copy_mcmeta,
+        'Shuffle': store_func(color.convert, color.ColorPresets.shuffle.value)
     }
 
     questions = [
